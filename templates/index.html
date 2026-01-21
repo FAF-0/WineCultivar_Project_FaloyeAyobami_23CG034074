@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Cultivar Predictor</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="blob"></div>
+    
+    <div class="container">
+        <header>
+            <h1>Wine Cultivar Predictor</h1>
+            <p class="subtitle">AI-Powered Origin Classification System</p>
+        </header>
+
+        <form id="predictionForm" onsubmit="return false;">
+            <div class="form-grid">
+                <!-- Alcohol -->
+                <div class="input-group">
+                    <label for="alcohol">Alcohol</label>
+                    <input type="number" step="0.01" id="alcohol" name="alcohol" placeholder="e.g. 13.2" required>
+                </div>
+
+                <!-- Flavanoids -->
+                <div class="input-group">
+                    <label for="flavanoids">Flavanoids</label>
+                    <input type="number" step="0.01" id="flavanoids" name="flavanoids" placeholder="e.g. 2.03" required>
+                </div>
+
+                <!-- Color Intensity -->
+                <div class="input-group">
+                    <label for="color_intensity">Color Intensity</label>
+                    <input type="number" step="0.01" id="color_intensity" name="color_intensity" placeholder="e.g. 4.6" required>
+                </div>
+
+                <!-- Hue -->
+                <div class="input-group">
+                    <label for="hue">Hue</label>
+                    <input type="number" step="0.01" id="hue" name="hue" placeholder="e.g. 1.05" required>
+                </div>
+
+                <!-- OD280/OD315 -->
+                <div class="input-group">
+                    <label for="od280">OD280/OD315 of Diluted Wines</label>
+                    <input type="number" step="0.01" id="od280" name="od280" placeholder="e.g. 3.4" required>
+                </div>
+
+                <!-- Proline -->
+                <div class="input-group">
+                    <label for="proline">Proline</label>
+                    <input type="number" step="1" id="proline" name="proline" placeholder="e.g. 1050" required>
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button type="button" class="btn-secondary" onclick="fillDemoData()">
+                    <span style="font-size: 1.1em;">🎲</span> Fill Demo Data
+                </button>
+                <button type="submit" class="btn-primary" onclick="predictWine()">
+                    <span id="btnText">Analyze Wine</span>
+                    <div id="loader" class="loader"></div>
+                </button>
+            </div>
+        </form>
+
+        <div id="result">
+            <div class="prediction-title">PREDICTED ORIGIN</div>
+            <div id="predictionClass" class="prediction-value">Cultivar X</div>
+            
+            <div style="text-align: left; margin-top: 1rem;">
+                <label>Confidence Score</label>
+                <div class="confidence-bar-container">
+                    <div id="confidenceBar" class="confidence-bar"></div>
+                </div>
+                <div id="confidenceText" style="text-align: right; font-size: 0.8rem; color: #d4a5a5;">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo Data Function
+        function fillDemoData() {
+            // Random valid ranges for the dataset features
+            const alcohol = (11 + Math.random() * 4).toFixed(2);
+            const flavanoids = (0.3 + Math.random() * 4).toFixed(2);
+            const color = (1.3 + Math.random() * 8).toFixed(2);
+            const hue = (0.5 + Math.random() * 1).toFixed(2);
+            const od280 = (1.2 + Math.random() * 2.5).toFixed(2);
+            const proline = Math.floor(280 + Math.random() * 1300);
+
+            document.getElementById('alcohol').value = alcohol;
+            document.getElementById('flavanoids').value = flavanoids;
+            document.getElementById('color_intensity').value = color;
+            document.getElementById('hue').value = hue;
+            document.getElementById('od280').value = od280;
+            document.getElementById('proline').value = proline;
+        }
+
+        async function predictWine() {
+            const form = document.getElementById('predictionForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // UI Loading State
+            const btnText = document.getElementById('btnText');
+            const loader = document.getElementById('loader');
+            const resultDiv = document.getElementById('result');
+            
+            btnText.style.display = 'none';
+            loader.style.display = 'block';
+            resultDiv.classList.remove('show');
+
+            // Gather Data
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => data[key] = parseFloat(value));
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Update UI
+                    document.getElementById('predictionClass').textContent = result.prediction;
+                    
+                    // Animate Confidence Bar
+                    const confidencePercent = (result.confidence * 100).toFixed(1);
+                    document.getElementById('confidenceBar').style.width = confidencePercent + '%';
+                    document.getElementById('confidenceText').textContent = confidencePercent + '%';
+
+                    resultDiv.classList.add('show');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while connecting to the server.');
+            } finally {
+                // Reset Loading State
+                btnText.style.display = 'inline';
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
