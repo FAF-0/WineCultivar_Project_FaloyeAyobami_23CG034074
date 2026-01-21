@@ -1,0 +1,6 @@
+Name: Faloye Ayobami
+Matric Number: 23CG034074
+Machine Learning Algorithm Used: Random Forest Classifier
+Model persistence method used: Joblib
+Live URL: https://render.com/ (See deployment instructions to host)
+GitHub repository link: https://github.com/ (See deployment instructions to push)
